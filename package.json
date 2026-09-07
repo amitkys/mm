@@ -6,9 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "db:push": "bunx --bun drizzle-kit push",
-    "db:migrate": "bunx --bun drizzle-kit migrate",
-    "db:studio": "bunx --bun drizzle-kit studio",
+    "db:push": "bunx drizzle-kit push",
+    "db:migrate": "bunx drizzle-kit migrate",
+    "db:studio": "bunx drizzle-kit studio",
     "db:auth": "bunx --bun auth@latest generate --output ./db/schema/user.ts",
     "lint": "eslint"
   },
