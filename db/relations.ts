@@ -11,6 +11,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.user.id,
       to: r.account.userId,
     }),
+    expansesCategories: r.many.expansesCategory({
+      from: r.user.id,
+      to: r.expansesCategory.userId,
+    }),
   },
   session: {
     user: r.one.user({
@@ -24,4 +28,11 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.user.id,
     }),
   },
+  expansesCategory: {
+    user: r.one.user({
+      from: r.expansesCategory.userId,
+      to: r.user.id,
+    }),
+  },
 }));
+
