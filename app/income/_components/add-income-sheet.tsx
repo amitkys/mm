@@ -92,7 +92,7 @@ export function AddIncomeSheet() {
       </Button>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? "bottom" : "right"} className="p-6 sm:max-w-md">
+        <SheetContent side={isMobile ? "bottom" : "right"} className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl">
           <SheetHeader className="mb-6 p-0">
             <SheetTitle>Add Income Record</SheetTitle>
             <SheetDescription>
@@ -100,7 +100,7 @@ export function AddIncomeSheet() {
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-2">
               <Label htmlFor="income-date">Date</Label>
               <Input
@@ -184,7 +184,7 @@ export function AddIncomeSheet() {
               />
             </div>
 
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2 sm:col-span-2">
               <Label htmlFor="income-notes">Notes (Optional)</Label>
               <Input
                 id="income-notes"
@@ -196,12 +196,12 @@ export function AddIncomeSheet() {
             </div>
 
             {errorMessage && (
-              <div className="rounded-md bg-destructive/10 p-3 text-xs text-destructive">
+              <div className="rounded-md bg-destructive/10 p-3 text-xs text-destructive sm:col-span-2">
                 {errorMessage}
               </div>
             )}
 
-            <SheetFooter className="mt-6 flex-row justify-end gap-2 p-0">
+            <SheetFooter className="mt-6 flex-row justify-end gap-2 p-0 sm:col-span-2">
               <SheetClose render={<Button type="button" variant="outline" />}>
                 Cancel
               </SheetClose>

@@ -19,6 +19,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.user.id,
       to: r.income.userId,
     }),
+    expansesLogs: r.many.expansesLog({
+      from: r.user.id,
+      to: r.expansesLog.userId,
+    }),
   },
   session: {
     user: r.one.user({
@@ -37,11 +41,33 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.expansesCategory.userId,
       to: r.user.id,
     }),
+    expansesLogs: r.many.expansesLog({
+      from: r.expansesCategory.id,
+      to: r.expansesLog.categoryId,
+    }),
   },
   income: {
     user: r.one.user({
       from: r.income.userId,
       to: r.user.id,
+    }),
+    expansesLogs: r.many.expansesLog({
+      from: r.income.id,
+      to: r.expansesLog.incomeId,
+    }),
+  },
+  expansesLog: {
+    user: r.one.user({
+      from: r.expansesLog.userId,
+      to: r.user.id,
+    }),
+    categoryRef: r.one.expansesCategory({
+      from: r.expansesLog.categoryId,
+      to: r.expansesCategory.id,
+    }),
+    incomeRef: r.one.income({
+      from: r.expansesLog.incomeId,
+      to: r.income.id,
     }),
   },
 }));
