@@ -36,7 +36,7 @@ export const columns = columnHelper.columns([
         header: "Amount",
         cell: (info) => {
             const num = Number(info.getValue());
-            return isNaN(num) ? info.getValue() : `$${num.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+            return isNaN(num) ? info.getValue() : `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
         },
     }),
     columnHelper.accessor("depositedTo", {

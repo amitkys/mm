@@ -94,7 +94,7 @@ export function IncomeRowActions({ incomeItem }: IncomeRowActionsProps) {
   const handleDelete = async () => {
     if (
       !confirm(
-        `Are you sure you want to delete income entry "${incomeItem.name}" (${incomeItem.source} - $${incomeItem.amount})?`
+        `Are you sure you want to delete income entry "${incomeItem.name}" (${incomeItem.source} - ₹${incomeItem.amount})?`
       )
     ) {
       return;

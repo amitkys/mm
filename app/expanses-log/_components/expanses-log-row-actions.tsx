@@ -141,7 +141,7 @@ export function ExpansesLogRowActions({ logItem }: ExpansesLogRowActionsProps) {
   const handleDelete = async () => {
     if (
       !confirm(
-        `Are you sure you want to delete expense entry "${logItem.name || logItem.category}" (${logItem.category} - $${logItem.amount})?`
+        `Are you sure you want to delete expense entry "${logItem.name || logItem.category}" (${logItem.category} - ₹${logItem.amount})?`
       )
     ) {
       return;
@@ -214,7 +214,7 @@ export function ExpansesLogRowActions({ logItem }: ExpansesLogRowActionsProps) {
                 <option value="">None (Unassigned)</option>
                 {(incomeData ?? []).map((inc) => (
                   <option key={inc.id} value={inc.id}>
-                    {inc.name} ({inc.source} - ${inc.amount})
+                    {inc.name} ({inc.source} - ₹{inc.amount})
                   </option>
                 ))}
               </select>

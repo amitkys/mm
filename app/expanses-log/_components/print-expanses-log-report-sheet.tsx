@@ -245,7 +245,7 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
                 <option value="UNASSIGNED">Unassigned Only (No Income Tag)</option>
                 {(incomeData ?? []).map((inc) => (
                   <option key={inc.id} value={inc.id}>
-                    {inc.name} ({inc.source} - ${inc.amount})
+                    {inc.name} ({inc.source} - ₹{inc.amount})
                   </option>
                 ))}
               </select>
@@ -392,7 +392,7 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
             <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs text-muted-foreground">
                 <span>Matching Entries: <strong className="text-foreground font-semibold">{filteredLogs.length}</strong></span>
-                <span>Total Amount: <strong className="text-foreground font-semibold">${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}</strong></span>
+                <span>Total Amount: <strong className="text-foreground font-semibold">₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>
               </div>
               <p className="text-xs text-muted-foreground italic border-t pt-2">
                 Active Filter: {filterSummaryText}
@@ -418,55 +418,46 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
 
       {/* Hidden Printable Area */}
       <div className="hidden">
-        <div ref={printRef} className="p-8 bg-white text-black font-sans w-full">
-          {/* Print Header */}
-          <div className="border-b pb-4 mb-6 flex items-start justify-between">
+        <div ref={printRef} className="p-4 bg-white text-black font-sans text-[11px] w-full">
+          {/* Minimal Black & White Header */}
+          <div className="border-b border-black pb-2 mb-3 flex items-end justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                Expense Log Statement
+              <h1 className="text-base font-bold uppercase tracking-wide text-black">
+                Expense Log Report
               </h1>
-              <p className="text-xs text-gray-500 mt-1">{filterSummaryText}</p>
+              <p className="text-[10px] text-black font-mono mt-0.5">{filterSummaryText}</p>
             </div>
-            <div className="text-right text-xs text-gray-500">
-              <p className="font-semibold text-gray-700">Money Management Report</p>
-              <p>Generated: {new Date().toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}</p>
-            </div>
-          </div>
-
-          {/* Print KPI Summary Bar */}
-          <div className="grid grid-cols-2 gap-4 mb-6 bg-gray-50 p-4 rounded border text-xs">
-            <div>
-              <span className="text-gray-500 block">Total Transactions</span>
-              <span className="text-lg font-bold text-gray-900">{filteredLogs.length}</span>
-            </div>
-            <div>
-              <span className="text-gray-500 block">Total Expenses</span>
-              <span className="text-lg font-bold text-gray-900">
-                ${totalAmount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
-              </span>
+            <div className="text-right text-[10px] text-black">
+              <p>Date: {new Date().toLocaleDateString("en-IN", { year: "numeric", month: "short", day: "numeric" })}</p>
             </div>
           </div>
 
-          {/* Printable Data Table */}
+          {/* Compact B&W Summary Bar */}
+          <div className="border border-black p-2 mb-3 flex items-center justify-between text-[11px] font-mono">
+            <span>Total Transactions: <strong>{filteredLogs.length}</strong></span>
+            <span>Total Amount: <strong>₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>
+          </div>
+
+          {/* Simple Black & White Data Table */}
           {filteredLogs.length > 0 ? (
-            <table className="w-full text-left border-collapse text-xs">
+            <table className="w-full text-left border-collapse text-[10px] font-sans">
               <thead>
-                <tr className="border-b-2 border-gray-300 bg-gray-100 text-gray-700 uppercase font-semibold text-[10px]">
-                  {columnToggles.date && <th className="p-2">Date</th>}
-                  {columnToggles.incomeTag && <th className="p-2">Tag / Income</th>}
-                  {columnToggles.category && <th className="p-2">Category</th>}
-                  {columnToggles.subCategory && <th className="p-2">Sub Category</th>}
-                  {columnToggles.amount && <th className="p-2 text-right">Amount</th>}
-                  {columnToggles.paymentMethod && <th className="p-2">Payment Method</th>}
-                  {columnToggles.source && <th className="p-2">Source</th>}
-                  {columnToggles.type && <th className="p-2">Type</th>}
-                  {columnToggles.description && <th className="p-2">Description</th>}
+                <tr className="border-b border-black text-black uppercase font-bold text-[9px]">
+                  {columnToggles.date && <th className="py-1 px-1.5">Date</th>}
+                  {columnToggles.incomeTag && <th className="py-1 px-1.5">Tag / Income</th>}
+                  {columnToggles.category && <th className="py-1 px-1.5">Category</th>}
+                  {columnToggles.subCategory && <th className="py-1 px-1.5">Sub Category</th>}
+                  {columnToggles.amount && <th className="py-1 px-1.5 text-right">Amount</th>}
+                  {columnToggles.paymentMethod && <th className="py-1 px-1.5">Payment Method</th>}
+                  {columnToggles.source && <th className="py-1 px-1.5">Source</th>}
+                  {columnToggles.type && <th className="py-1 px-1.5">Type</th>}
+                  {columnToggles.description && <th className="py-1 px-1.5">Description</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody>
                 {filteredLogs.map((log) => {
                   const logDate = log.date
-                    ? new Date(log.date).toLocaleDateString("en-US", {
+                    ? new Date(log.date).toLocaleDateString("en-IN", {
                         year: "numeric",
                         month: "short",
                         day: "numeric",
@@ -476,34 +467,34 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
                   const amtNum = Number(log.amount);
                   const formattedAmt = isNaN(amtNum)
                     ? log.amount
-                    : `$${amtNum.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+                    : `₹${amtNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
 
                   return (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      {columnToggles.date && <td className="p-2 font-medium">{logDate}</td>}
+                    <tr key={log.id} className="border-b border-gray-300">
+                      {columnToggles.date && <td className="py-1 px-1.5 font-medium">{logDate}</td>}
                       {columnToggles.incomeTag && (
-                        <td className="p-2 font-mono text-[11px] text-gray-600">
+                        <td className="py-1 px-1.5 font-mono text-[9px]">
                           {log.name || "-"}
                         </td>
                       )}
-                      {columnToggles.category && <td className="p-2 font-medium">{log.category}</td>}
+                      {columnToggles.category && <td className="py-1 px-1.5">{log.category}</td>}
                       {columnToggles.subCategory && (
-                        <td className="p-2 text-gray-600">{log.subCategory || "-"}</td>
+                        <td className="py-1 px-1.5">{log.subCategory || "-"}</td>
                       )}
                       {columnToggles.amount && (
-                        <td className="p-2 text-right font-bold text-gray-900">{formattedAmt}</td>
+                        <td className="py-1 px-1.5 text-right font-bold">{formattedAmt}</td>
                       )}
                       {columnToggles.paymentMethod && (
-                        <td className="p-2 text-gray-600">{log.paymentMethod}</td>
+                        <td className="py-1 px-1.5">{log.paymentMethod}</td>
                       )}
                       {columnToggles.source && (
-                        <td className="p-2 text-gray-600">{log.source || "-"}</td>
+                        <td className="py-1 px-1.5">{log.source || "-"}</td>
                       )}
                       {columnToggles.type && (
-                        <td className="p-2 font-semibold text-gray-700">{log.type}</td>
+                        <td className="py-1 px-1.5 font-semibold">{log.type}</td>
                       )}
                       {columnToggles.description && (
-                        <td className="p-2 text-gray-600 max-w-[200px] truncate">
+                        <td className="py-1 px-1.5 max-w-[200px] truncate">
                           {log.description || "-"}
                         </td>
                       )}
@@ -513,15 +504,10 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
               </tbody>
             </table>
           ) : (
-            <div className="py-8 text-center text-gray-500 text-xs border rounded">
+            <div className="py-4 text-center text-black text-[10px] border border-black">
               No expense entries matched the selected filter configuration.
             </div>
           )}
-
-          {/* Printable Footer */}
-          <div className="mt-8 border-t pt-4 text-center text-[10px] text-gray-400">
-            End of Report • Generated automatically by Money Manager
-          </div>
         </div>
       </div>
     </>

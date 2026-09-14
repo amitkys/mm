@@ -169,7 +169,7 @@ export function AddExpansesLogSheet() {
                 <option value="">None (Unassigned)</option>
                 {(incomeData ?? []).map((inc) => (
                   <option key={inc.id} value={inc.id}>
-                    {inc.name} ({inc.source} - ${inc.amount})
+                    {inc.name} ({inc.source} - ₹{inc.amount})
                   </option>
                 ))}
               </select>

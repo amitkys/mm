@@ -45,7 +45,7 @@ export const columns = columnHelper.columns([
             const num = Number(info.getValue());
             return isNaN(num)
                 ? info.getValue()
-                : `$${num.toLocaleString("en-US", { minimumFractionDigits: 2 })}`;
+                : `₹${num.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
         },
     }),
     columnHelper.accessor("paymentMethod", {
