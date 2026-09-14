@@ -46,7 +46,7 @@ export function Sidebar({ isEmbedded = false, className }: SidebarProps) {
                                 : "translate-x-0 opacity-100"
                             )}
                           >
-                            Brand
+                            mm
                           </h1></Button>
         <Menu isOpen={getOpenState()} />
       </div>

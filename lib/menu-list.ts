@@ -1,4 +1,5 @@
 import {
+  LayoutDashboard,
   Wallet,
   Receipt,
   Tags,
@@ -26,6 +27,18 @@ export type Group = {
 
 export function getMenuList(pathname: string): Group[] {
   return [
+    {
+      groupLabel: "",
+      menus: [
+        {
+          href: "/dashboard",
+          label: "Dashboard",
+          icon: LayoutDashboard,
+          active: pathname.startsWith("/dashboard"),
+          submenus: [],
+        },
+      ],
+    },
     {
       groupLabel: "Finances",
       menus: [
@@ -59,3 +72,4 @@ export function getMenuList(pathname: string): Group[] {
     },
   ];
 }
+

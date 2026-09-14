@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Ellipsis, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { signOut } from "@/lib/auth-client";
 
 import { cn } from "@/lib/utils";
 import { getMenuList } from "@/lib/menu-list";
@@ -23,6 +24,11 @@ interface MenuProps {
 export function Menu({ isOpen }: MenuProps) {
   const pathname = usePathname() || "";
   const menuList = getMenuList(pathname);
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.href = "/signin";
+  };
 
   return (
     <ScrollArea className="[&>div>div[style]]:!block">
@@ -105,7 +111,7 @@ export function Menu({ isOpen }: MenuProps) {
           <li className="w-full grow flex items-end">
             <TooltipProvider delay={100}>
               <Tooltip>
-                <TooltipTrigger render={<Button onClick={() => {}} variant="outline" className="w-full justify-center h-10 mt-5" />}><span className={cn(isOpen === false ? "" : "mr-4")}>
+                <TooltipTrigger render={<Button onClick={handleSignOut} variant="outline" className="w-full justify-center h-10 mt-5 cursor-pointer" />}><span className={cn(isOpen === false ? "" : "mr-4")}>
                                                     <LogOut size={18} />
                                                   </span><p
                                                     className={cn(
@@ -126,3 +132,4 @@ export function Menu({ isOpen }: MenuProps) {
     </ScrollArea>
   );
 }
+

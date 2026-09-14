@@ -30,13 +30,7 @@ export function CategoryTableView() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-lg font-semibold">Expense Categories List</h2>
-          <p className="text-sm text-muted-foreground">
-            Manage system default and custom expense categories.
-          </p>
-        </div>
+      <div className="flex items-center justify-end">
         <AddCategorySheet categories={data ?? []} />
       </div>
       <DataTable columns={columns} data={data ?? []} />

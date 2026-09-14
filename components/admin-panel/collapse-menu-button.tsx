@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuTrigger,
@@ -136,9 +137,11 @@ export function CollapseMenuButton({
         </Tooltip>
       </TooltipProvider>
       <DropdownMenuContent side="right" sideOffset={25} align="start">
-        <DropdownMenuLabel className="max-w-[190px] truncate">
-          {label}
-        </DropdownMenuLabel>
+        <DropdownMenuGroup>
+          <DropdownMenuLabel className="max-w-[190px] truncate">
+            {label}
+          </DropdownMenuLabel>
+        </DropdownMenuGroup>
         <DropdownMenuSeparator />
         {submenus.map(({ href, label, active }, index) => (
           <DropdownMenuItem key={index} render={<Link className={`cursor-pointer ${
