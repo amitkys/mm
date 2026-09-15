@@ -13,7 +13,8 @@ export const auth = betterAuth({
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID!,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-        }
+            // scope: ["openid", "email", "profile", "https://www.googleapis.com/auth/drive.file"],
+        },
     },
     plugins: [nextCookies()]
 });
