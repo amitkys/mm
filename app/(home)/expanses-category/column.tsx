@@ -11,6 +11,10 @@ const columnHelper = createColumnHelper<DataTableFeatures, ExpansesCategory>()
 export const columns = columnHelper.columns([
     columnHelper.accessor("category", {
         header: "Category",
+        filterFn: (row, columnId, filterValue) => {
+            if (!filterValue) return true
+            return row.original.category === filterValue
+        },
     }),
     columnHelper.accessor("subCategory", {
         header: "Sub Category",
