@@ -102,7 +102,7 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
 
   // Filter Logic
   const filteredLogs = useMemo(() => {
-    return logs.filter((log) => {
+    const filtered = logs.filter((log) => {
       const logDate = new Date(log.date);
       const now = new Date();
 
@@ -161,6 +161,16 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
       }
 
       return true;
+    });
+
+    // Sort ascending by date (oldest to newest) for print reports
+    return filtered.sort((a, b) => {
+      const timeA = new Date(a.date).getTime();
+      const timeB = new Date(b.date).getTime();
+      if (timeA !== timeB) return timeA - timeB;
+      const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+      const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      return createdA - createdB;
     });
   }, [logs, datePreset, specificDate, fromDate, toDate, selectedIncomeId, selectedCategory]);
 

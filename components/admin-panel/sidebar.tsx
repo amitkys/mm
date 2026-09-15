@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/hooks/use-sidebar";
 import { useStore } from "@/hooks/use-store";
 import { cn } from "@/lib/utils";
-import { PanelsTopLeft } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 
 interface SidebarProps {
@@ -38,7 +38,7 @@ export function Sidebar({ isEmbedded = false, className }: SidebarProps) {
         <Button className={cn(
                           "transition-transform ease-in-out duration-300 mb-1 justify-start",
                           !getOpenState() ? "translate-x-1" : "translate-x-0"
-                        )} variant="link" render={<Link href="/dashboard" className="flex items-center gap-2 text-sidebar-foreground" />} nativeButton={false}><PanelsTopLeft className="w-6 h-6 mr-1" /><h1
+                        )} variant="link" render={<Link href="/dashboard" className="flex items-center gap-2 text-sidebar-foreground" />} nativeButton={false}><Image src="/logo.svg" alt="mm logo" width={24} height={24} className="w-6 h-6 mr-1" /><h1
                             className={cn(
                               "font-bold text-lg whitespace-nowrap transition-[transform,opacity,display] ease-in-out duration-300",
                               !getOpenState()

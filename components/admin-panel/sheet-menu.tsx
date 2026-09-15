@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { MenuIcon, PanelsTopLeft } from "lucide-react";
+import Image from "next/image";
+import { MenuIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Menu } from "@/components/admin-panel/menu";
@@ -17,7 +18,7 @@ export function SheetMenu() {
       <SheetTrigger className="lg:hidden" render={<Button className="h-8" variant="outline" size="icon" />}><MenuIcon size={20} /></SheetTrigger>
       <SheetContent className="sm:w-72 px-3 h-full flex flex-col" side="left">
         <SheetHeader>
-          <Button className="flex justify-center items-center pb-2 pt-1" variant="link" render={<Link href="/dashboard" className="flex items-center gap-2" />} nativeButton={false}><PanelsTopLeft className="w-6 h-6 mr-1" /><SheetTitle className="font-bold text-lg">mm</SheetTitle></Button>
+          <Button className="flex justify-center items-center pb-2 pt-1" variant="link" render={<Link href="/dashboard" className="flex items-center gap-2" />} nativeButton={false}><Image src="/logo.svg" alt="mm logo" width={24} height={24} className="w-6 h-6 mr-1" /><SheetTitle className="font-bold text-lg">mm</SheetTitle></Button>
         </SheetHeader>
         <Menu isOpen />
       </SheetContent>

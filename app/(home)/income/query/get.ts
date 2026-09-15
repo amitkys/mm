@@ -16,6 +16,16 @@ export function useGetIncomeQuery() {
   return useQuery(getIncomeQuery());
 }
 
+import { type ExpansesLog } from "@/app/(home)/expanses-log/query/get";
+
 export type Income = NonNullable<
   ReturnType<typeof useGetIncomeQuery>["data"]
 >[number];
+
+export type EnrichedIncome = Income & {
+  totalSpent?: number;
+  remaining?: number;
+  spentPercent?: number;
+  taggedLogs?: ExpansesLog[];
+  onOpenSheet?: (income: EnrichedIncome) => void;
+};

@@ -110,9 +110,15 @@ export const columns = columnHelper.columns([
         header: "Tag",
         cell: (info) => (
             <span className="font-mono text-xs text-muted-foreground">
-                {info.getValue()}
+                {info.getValue() || "-"}
             </span>
         ),
+        filterFn: (row, columnId, filterValue) => {
+            if (!filterValue) return true;
+            return String(row.original.name ?? "")
+                .toLowerCase()
+                .includes(String(filterValue).toLowerCase());
+        },
     }),
     columnHelper.display({
         id: "actions",
