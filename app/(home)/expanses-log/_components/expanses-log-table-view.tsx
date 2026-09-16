@@ -5,7 +5,7 @@ import { DataTable } from "../data-table";
 import { useGetExpansesLogQuery } from "../query/get";
 import { AddExpansesLogSheet } from "./add-expanses-log-sheet";
 import { PrintExpansesLogReportSheet } from "./print-expanses-log-report-sheet";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export function ExpansesLogTableView() {
   const { data, isLoading, isError, error } = useGetExpansesLogQuery();
@@ -14,7 +14,7 @@ export function ExpansesLogTableView() {
     return (
       <div className="flex h-48 items-center justify-center rounded-md border">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Spinner size="md" />
           <span>Loading expense logs...</span>
         </div>
       </div>

@@ -19,7 +19,8 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Edit, Trash2, Loader2 } from "lucide-react";
+import { Edit, Trash2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 interface ExpansesLogRowActionsProps {
   logItem: ExpansesLog;
@@ -175,7 +176,7 @@ export function ExpansesLogRowActions({ logItem }: ExpansesLogRowActionsProps) {
           title="Delete Expense Log"
         >
           {deleteMutation.isPending ? (
-            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            <Spinner size="xs" />
           ) : (
             <Trash2 className="h-3.5 w-3.5" />
           )}
@@ -351,7 +352,7 @@ export function ExpansesLogRowActions({ logItem }: ExpansesLogRowActionsProps) {
               </SheetClose>
               <Button type="submit" disabled={updateMutation.isPending}>
                 {updateMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner size="sm" className="mr-2" />
                 )}
                 Save Changes
               </Button>

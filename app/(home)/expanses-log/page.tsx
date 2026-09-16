@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import { ContentLayout } from "@/components/admin-panel/content-layout";
 import { ExpansesLogTableView } from "./_components/expanses-log-table-view";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function ExpansesLogPage() {
   return (
@@ -10,7 +10,7 @@ export default function ExpansesLogPage() {
         fallback={
           <div className="flex h-48 items-center justify-center rounded-md border">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Loader2 className="h-5 w-5 animate-spin" />
+              <Spinner size="lg" />
               <span>Loading expense logs...</span>
             </div>
           </div>

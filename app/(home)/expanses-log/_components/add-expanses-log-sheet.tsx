@@ -17,7 +17,8 @@ import {
   SheetClose,
 } from "@/components/ui/sheet";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export function AddExpansesLogSheet() {
   const isMobile = useIsMobile();
@@ -300,7 +301,7 @@ export function AddExpansesLogSheet() {
               </SheetClose>
               <Button type="submit" disabled={createMutation.isPending}>
                 {createMutation.isPending && (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Spinner size="sm" className="mr-2" />
                 )}
                 Save Expense
               </Button>

@@ -7,7 +7,7 @@ import { useGetIncomeQuery, type EnrichedIncome } from "../query/get";
 import { useGetExpansesLogQuery, type ExpansesLog } from "@/app/(home)/expanses-log/query/get";
 import { AddIncomeSheet } from "./add-income-sheet";
 import { IncomeExpansesLogSheet } from "./income-expanses-log-sheet";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 
 export function IncomeTableView() {
   const { data: incomeData, isLoading: isIncomeLoading, isError: isIncomeError, error: incomeError } = useGetIncomeQuery();
@@ -65,7 +65,7 @@ export function IncomeTableView() {
     return (
       <div className="flex h-48 items-center justify-center rounded-md border">
         <div className="flex items-center gap-2 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" />
+          <Spinner size="md" />
           <span>Loading income records & analytics...</span>
         </div>
       </div>

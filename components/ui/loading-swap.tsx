@@ -1,6 +1,6 @@
 import { cn } from "@/lib/utils"
 import type { ReactNode } from "react"
-import { Swirling } from "@/components/loading-ui/swirling"
+import { Spinner } from "@/components/ui/spinner"
 
 export function LoadingSwap({
   isLoading,
@@ -29,9 +29,9 @@ export function LoadingSwap({
           className,
         )}
       >
-        {/* <Loader2Icon className="animate-spin" /> */}
-        <Swirling className="size-8" />
+        <Spinner size="lg" />
       </div>
     </div>
   )
 }
+
