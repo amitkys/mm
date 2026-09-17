@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateExpansesCategoryAction } from "@/app/(home)/expanses-category/lib/action";
+import type { UpdateExpansesCategorySchema } from "../lib/zod-type/expanses-category";
 
 export function useUpdateExpansesCategoryMutation() {
   const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export function useUpdateExpansesCategoryMutation() {
       input,
     }: {
       id: string;
-      input: { category?: string; subCategory?: string | null };
+      input: UpdateExpansesCategorySchema;
     }) => updateExpansesCategoryAction(id, input),
     onSuccess: (res) => {
       if (!res.success) return;

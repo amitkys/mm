@@ -1,11 +1,20 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
 import { type ExpansesCategory } from "../query/get";
 import { useCreateExpansesCategoryMutation } from "../query/create";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldLabel,
+  FieldContent,
+  FieldError,
+} from "@/components/ui/field";
 import {
   Sheet,
   SheetContent,
@@ -25,29 +34,70 @@ interface AddCategorySheetProps {
 
 const NEW_OPTION_VALUE = "__NEW__";
 
+const addCategoryFormSchema = z
+  .object({
+    categorySelect: z
+      .string()
+      .min(1, { error: "Category selection is required" }),
+    customCategory: z.string().optional(),
+    subCategorySelect: z.string().optional(),
+    customSubCategory: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.categorySelect === NEW_OPTION_VALUE &&
+      (!data.customCategory || !data.customCategory.trim())
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["customCategory"],
+        message: "New category name is required",
+      });
+    }
+    if (
+      data.subCategorySelect === NEW_OPTION_VALUE &&
+      (!data.customSubCategory || !data.customSubCategory.trim())
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["customSubCategory"],
+        message: "New sub category name is required",
+      });
+    }
+  });
+
+type AddCategoryFormValues = z.infer<typeof addCategoryFormSchema>;
+
 export function AddCategorySheet({ categories }: AddCategorySheetProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
-  const [categorySelect, setCategorySelect] = useState<string>("");
-  const [customCategory, setCustomCategory] = useState<string>("");
-  const [subCategorySelect, setSubCategorySelect] = useState<string>("");
-  const [customSubCategory, setCustomSubCategory] = useState<string>("");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const createMutation = useCreateExpansesCategoryMutation();
 
-  // Extract unique category names
   const existingCategories = Array.from(
     new Set(categories.map((c) => c.category))
   ).sort();
 
-  // Extract unique subcategories for currently selected category
+  const form = useForm<AddCategoryFormValues>({
+    resolver: zodResolver(addCategoryFormSchema),
+    defaultValues: {
+      categorySelect: existingCategories[0] || NEW_OPTION_VALUE,
+      customCategory: "",
+      subCategorySelect: "",
+      customSubCategory: "",
+    },
+  });
+
+  const categorySelectWatch = form.watch("categorySelect");
+  const subCategorySelectWatch = form.watch("subCategorySelect");
+
   const existingSubCategories =
-    categorySelect && categorySelect !== NEW_OPTION_VALUE
+    categorySelectWatch && categorySelectWatch !== NEW_OPTION_VALUE
       ? Array.from(
           new Set(
             categories
-              .filter((c) => c.category === categorySelect && c.subCategory)
+              .filter((c) => c.category === categorySelectWatch && c.subCategory)
               .map((c) => c.subCategory!)
           )
         ).sort()
@@ -56,41 +106,35 @@ export function AddCategorySheet({ categories }: AddCategorySheetProps) {
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (open) {
-      setCategorySelect(existingCategories[0] || NEW_OPTION_VALUE);
-      setCustomCategory("");
-      setSubCategorySelect("");
-      setCustomSubCategory("");
-      setErrorMessage(null);
+      form.reset({
+        categorySelect: existingCategories[0] || NEW_OPTION_VALUE,
+        customCategory: "",
+        subCategorySelect: "",
+        customSubCategory: "",
+      });
+      setServerError(null);
     }
   };
 
-  const handleCategorySelectChange = (val: string) => {
-    setCategorySelect(val);
-    setSubCategorySelect("");
-    setCustomSubCategory("");
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
+  const onSubmit = async (data: AddCategoryFormValues) => {
+    setServerError(null);
 
     const finalCategory =
-      categorySelect === NEW_OPTION_VALUE
-        ? customCategory.trim()
-        : categorySelect.trim();
-
-    if (!finalCategory) {
-      setErrorMessage("Please select or enter a category name.");
-      return;
-    }
+      data.categorySelect === NEW_OPTION_VALUE
+        ? data.customCategory!.trim()
+        : data.categorySelect.trim();
 
     let finalSubCategory: string | null = null;
-    if (categorySelect === NEW_OPTION_VALUE) {
-      finalSubCategory = customSubCategory.trim() ? customSubCategory.trim() : null;
-    } else if (subCategorySelect === NEW_OPTION_VALUE) {
-      finalSubCategory = customSubCategory.trim() ? customSubCategory.trim() : null;
-    } else if (subCategorySelect) {
-      finalSubCategory = subCategorySelect.trim();
+    if (data.categorySelect === NEW_OPTION_VALUE) {
+      finalSubCategory = data.customSubCategory?.trim()
+        ? data.customSubCategory.trim()
+        : null;
+    } else if (data.subCategorySelect === NEW_OPTION_VALUE) {
+      finalSubCategory = data.customSubCategory?.trim()
+        ? data.customSubCategory.trim()
+        : null;
+    } else if (data.subCategorySelect) {
+      finalSubCategory = data.subCategorySelect.trim();
     }
 
     const res = await createMutation.mutateAsync({
@@ -101,7 +145,7 @@ export function AddCategorySheet({ categories }: AddCategorySheetProps) {
     if (res.success) {
       setIsOpen(false);
     } else {
-      setErrorMessage(res.message || "Failed to create expense category.");
+      setServerError(res.message || "Failed to create expense category.");
     }
   };
 
@@ -113,7 +157,10 @@ export function AddCategorySheet({ categories }: AddCategorySheetProps) {
       </Button>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? "bottom" : "right"} className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl"
+        >
           <SheetHeader className="mb-6 p-0">
             <SheetTitle>Add Expense Category</SheetTitle>
             <SheetDescription>
@@ -121,84 +168,139 @@ export function AddCategorySheet({ categories }: AddCategorySheetProps) {
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit)}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
             {/* Category Selection */}
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="category-select">Category</Label>
-              <select
-                id="category-select"
-                value={categorySelect}
-                onChange={(e) => handleCategorySelectChange(e.target.value)}
-                className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-              >
-                {existingCategories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-                <option value={NEW_OPTION_VALUE}>+ Add New Category</option>
-              </select>
-            </div>
+            <Controller
+              control={form.control}
+              name="categorySelect"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="category-select">
+                    Category
+                  </FieldLabel>
+                  <FieldContent>
+                    <select
+                      {...field}
+                      id="category-select"
+                      aria-invalid={fieldState.invalid}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        form.setValue("subCategorySelect", "");
+                        form.setValue("customSubCategory", "");
+                      }}
+                      className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                    >
+                      {existingCategories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                      <option value={NEW_OPTION_VALUE}>
+                        + Add New Category
+                      </option>
+                    </select>
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
             {/* Custom Category Input if New Selected */}
-            {categorySelect === NEW_OPTION_VALUE && (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="custom-category">New Category Name</Label>
-                <Input
-                  id="custom-category"
-                  type="text"
-                  value={customCategory}
-                  onChange={(e) => setCustomCategory(e.target.value)}
-                  placeholder="e.g. Subscriptions"
-                  required
-                />
-              </div>
+            {categorySelectWatch === NEW_OPTION_VALUE && (
+              <Controller
+                control={form.control}
+                name="customCategory"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid || undefined}>
+                    <FieldLabel requiredLable htmlFor="custom-category">
+                      New Category Name
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        {...field}
+                        id="custom-category"
+                        type="text"
+                        aria-invalid={fieldState.invalid}
+                        placeholder="e.g. Subscriptions"
+                      />
+                      <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                    </FieldContent>
+                  </Field>
+                )}
+              />
             )}
 
             {/* Sub-Category Selection */}
-            {categorySelect !== NEW_OPTION_VALUE ? (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="subcategory-select">Sub Category</Label>
-                <select
-                  id="subcategory-select"
-                  value={subCategorySelect}
-                  onChange={(e) => setSubCategorySelect(e.target.value)}
-                  className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                >
-                  <option value="">None (No Sub Category)</option>
-                  {existingSubCategories.map((sub) => (
-                    <option key={sub} value={sub}>
-                      {sub}
-                    </option>
-                  ))}
-                  <option value={NEW_OPTION_VALUE}>+ Add New Sub Category</option>
-                </select>
-              </div>
+            {categorySelectWatch !== NEW_OPTION_VALUE ? (
+              <Controller
+                control={form.control}
+                name="subCategorySelect"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid || undefined}>
+                    <FieldLabel htmlFor="subcategory-select">
+                      Sub Category
+                    </FieldLabel>
+                    <FieldContent>
+                      <select
+                        {...field}
+                        id="subcategory-select"
+                        aria-invalid={fieldState.invalid}
+                        className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                      >
+                        <option value="">None (No Sub Category)</option>
+                        {existingSubCategories.map((sub) => (
+                          <option key={sub} value={sub}>
+                            {sub}
+                          </option>
+                        ))}
+                        <option value={NEW_OPTION_VALUE}>
+                          + Add New Sub Category
+                        </option>
+                      </select>
+                      <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                    </FieldContent>
+                  </Field>
+                )}
+              />
             ) : null}
 
             {/* Custom Sub-Category Input if New Sub-Category or New Category selected */}
-            {(categorySelect === NEW_OPTION_VALUE ||
-              subCategorySelect === NEW_OPTION_VALUE) && (
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="custom-sub-category">
-                  {categorySelect === NEW_OPTION_VALUE
-                    ? "Sub Category Name (Optional)"
-                    : "New Sub Category Name"}
-                </Label>
-                <Input
-                  id="custom-sub-category"
-                  type="text"
-                  value={customSubCategory}
-                  onChange={(e) => setCustomSubCategory(e.target.value)}
-                  placeholder="e.g. Streaming Services"
-                  required={subCategorySelect === NEW_OPTION_VALUE}
-                />
-              </div>
+            {(categorySelectWatch === NEW_OPTION_VALUE ||
+              subCategorySelectWatch === NEW_OPTION_VALUE) && (
+              <Controller
+                control={form.control}
+                name="customSubCategory"
+                render={({ field, fieldState }) => (
+                  <Field data-invalid={fieldState.invalid || undefined}>
+                    <FieldLabel
+                      requiredLable={subCategorySelectWatch === NEW_OPTION_VALUE}
+                      htmlFor="custom-sub-category"
+                    >
+                      {categorySelectWatch === NEW_OPTION_VALUE
+                        ? "Sub Category Name (Optional)"
+                        : "New Sub Category Name"}
+                    </FieldLabel>
+                    <FieldContent>
+                      <Input
+                        {...field}
+                        id="custom-sub-category"
+                        type="text"
+                        aria-invalid={fieldState.invalid}
+                        placeholder="e.g. Streaming Services"
+                      />
+                      <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                    </FieldContent>
+                  </Field>
+                )}
+              />
             )}
 
-            {errorMessage && (
+            {serverError && (
               <div className="rounded-md bg-destructive/10 p-3 text-xs text-destructive sm:col-span-2">
-                {errorMessage}
+                {serverError}
               </div>
             )}
 

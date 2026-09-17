@@ -1,12 +1,24 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { type ExpansesCategory } from "../query/get";
 import { useUpdateExpansesCategoryMutation } from "../query/update";
 import { useDeleteExpansesCategoryMutation } from "../query/delete";
+import {
+  updateExpansesCategorySchema,
+  type UpdateExpansesCategorySchema,
+} from "../lib/zod-type/expanses-category";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldLabel,
+  FieldContent,
+  FieldError,
+} from "@/components/ui/field";
 import {
   Sheet,
   SheetContent,
@@ -27,43 +39,45 @@ interface CategoryRowActionsProps {
 export function CategoryRowActions({ categoryItem }: CategoryRowActionsProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
-  const [category, setCategory] = useState(categoryItem.category);
-  const [subCategory, setSubCategory] = useState(categoryItem.subCategory ?? "");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const updateMutation = useUpdateExpansesCategoryMutation();
   const deleteMutation = useDeleteExpansesCategoryMutation();
 
+  const form = useForm<UpdateExpansesCategorySchema>({
+    resolver: zodResolver(updateExpansesCategorySchema),
+    defaultValues: {
+      category: categoryItem.category,
+      subCategory: categoryItem.subCategory ?? "",
+    },
+  });
+
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (open) {
-      setCategory(categoryItem.category);
-      setSubCategory(categoryItem.subCategory ?? "");
-      setErrorMessage(null);
+      form.reset({
+        category: categoryItem.category,
+        subCategory: categoryItem.subCategory ?? "",
+      });
+      setServerError(null);
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (!category.trim()) {
-      setErrorMessage("Category name is required.");
-      return;
-    }
+  const handleSave = async (data: UpdateExpansesCategorySchema) => {
+    setServerError(null);
 
     const res = await updateMutation.mutateAsync({
       id: categoryItem.id,
       input: {
-        category: category.trim(),
-        subCategory: subCategory.trim() ? subCategory.trim() : null,
+        category: data.category.trim(),
+        subCategory: data.subCategory?.trim() ? data.subCategory.trim() : null,
       },
     });
 
     if (res.success) {
       setIsOpen(false);
     } else {
-      setErrorMessage(res.message || "Failed to update category.");
+      setServerError(res.message || "Failed to update category.");
     }
   };
 
@@ -78,7 +92,7 @@ export function CategoryRowActions({ categoryItem }: CategoryRowActionsProps) {
       return;
     }
 
-    setErrorMessage(null);
+    setServerError(null);
     const res = await deleteMutation.mutateAsync(categoryItem.id);
     if (!res.success) {
       alert(res.message || "Failed to delete category.");
@@ -121,7 +135,10 @@ export function CategoryRowActions({ categoryItem }: CategoryRowActionsProps) {
       </div>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? "bottom" : "right"} className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl"
+        >
           <SheetHeader className="mb-6 p-0">
             <SheetTitle>Edit Expense Category</SheetTitle>
             <SheetDescription>
@@ -129,29 +146,54 @@ export function CategoryRowActions({ categoryItem }: CategoryRowActionsProps) {
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="category-name">Category Name</Label>
-              <Input
-                id="category-name"
-                type="text"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                placeholder="e.g. Food & Dining"
-                required
-              />
-            </div>
+          <form
+            onSubmit={form.handleSubmit(handleSave)}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            <Controller
+              control={form.control}
+              name="category"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="category-name">
+                    Category Name
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      {...field}
+                      id="category-name"
+                      type="text"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="e.g. Food & Dining"
+                    />
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="sub-category-name">Sub Category (Optional)</Label>
-              <Input
-                id="sub-category-name"
-                type="text"
-                value={subCategory}
-                onChange={(e) => setSubCategory(e.target.value)}
-                placeholder="e.g. Groceries"
-              />
-            </div>
+            <Controller
+              control={form.control}
+              name="subCategory"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel htmlFor="sub-category-name">
+                    Sub Category (Optional)
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      {...field}
+                      value={field.value ?? ""}
+                      id="sub-category-name"
+                      type="text"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="e.g. Groceries"
+                    />
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
             {categoryItem.isDefault && categoryItem.userId === null && (
               <p className="rounded-md bg-muted p-2.5 text-xs text-muted-foreground sm:col-span-2">
@@ -159,9 +201,9 @@ export function CategoryRowActions({ categoryItem }: CategoryRowActionsProps) {
               </p>
             )}
 
-            {errorMessage && (
+            {serverError && (
               <div className="rounded-md bg-destructive/10 p-3 text-xs text-destructive sm:col-span-2">
-                {errorMessage}
+                {serverError}
               </div>
             )}
 

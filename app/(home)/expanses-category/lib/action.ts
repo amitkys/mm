@@ -5,6 +5,12 @@ import { expansesCategory } from "@/db/schema/export";
 import { auth } from "@/lib/auth";
 import { and, eq, isNull, or } from "drizzle-orm";
 import { headers } from "next/headers";
+import {
+  createExpansesCategorySchema,
+  type CreateExpansesCategorySchema,
+  updateExpansesCategorySchema,
+  type UpdateExpansesCategorySchema,
+} from "./zod-type/expanses-category";
 
 export async function getExpansesCategoryAction() {
   try {
@@ -29,23 +35,24 @@ export async function getExpansesCategoryAction() {
   }
 }
 
-export async function createExpansesCategoryAction(input: {
-  category: string;
-  subCategory?: string | null;
-}) {
+export async function createExpansesCategoryAction(input: CreateExpansesCategorySchema) {
   try {
+    const parsed = createExpansesCategorySchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: parsed.error.issues[0]?.message || "Invalid input data",
+      };
+    }
+
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, message: "User not authenticated" };
-
-    if (!input.category || !input.category.trim()) {
-      return { success: false, message: "Category name is required" };
-    }
 
     const [created] = await db
       .insert(expansesCategory)
       .values({
-        category: input.category.trim(),
-        subCategory: input.subCategory?.trim() || null,
+        category: parsed.data.category,
+        subCategory: parsed.data.subCategory || null,
         userId: session.user.id,
         isDefault: false,
       })
@@ -60,9 +67,17 @@ export async function createExpansesCategoryAction(input: {
 
 export async function updateExpansesCategoryAction(
   id: string,
-  input: { category?: string; subCategory?: string | null }
+  input: UpdateExpansesCategorySchema
 ) {
   try {
+    const parsed = updateExpansesCategorySchema.safeParse(input);
+    if (!parsed.success) {
+      return {
+        success: false,
+        message: parsed.error.issues[0]?.message || "Invalid input data",
+      };
+    }
+
     const session = await auth.api.getSession({ headers: await headers() });
     if (!session) return { success: false, message: "User not authenticated" };
 
@@ -79,8 +94,8 @@ export async function updateExpansesCategoryAction(
       const [updated] = await db
         .update(expansesCategory)
         .set({
-          ...(input.category !== undefined && { category: input.category }),
-          ...(input.subCategory !== undefined && { subCategory: input.subCategory }),
+          category: parsed.data.category,
+          subCategory: parsed.data.subCategory || null,
         })
         .where(
           and(
@@ -95,9 +110,8 @@ export async function updateExpansesCategoryAction(
       const [created] = await db
         .insert(expansesCategory)
         .values({
-          category: input.category ?? existing.category,
-          subCategory:
-            input.subCategory !== undefined ? input.subCategory : existing.subCategory,
+          category: parsed.data.category,
+          subCategory: parsed.data.subCategory || null,
           userId: session.user.id,
           isDefault: false,
         })
