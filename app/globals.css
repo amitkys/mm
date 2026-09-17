@@ -138,4 +138,8 @@
     background-color: var(--popover);
     color: var(--popover-foreground);
   }
+
+  .form-required {
+    @apply text-destructive inline-block translate-y-[2px] transform text-[0.95em];
+  }
 }

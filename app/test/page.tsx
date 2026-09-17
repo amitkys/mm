@@ -1,5 +1,12 @@
 import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
+import { z } from "zod";
+
+const signinSchema = z.object({
+  username: z.string().min(1, { error: "hi there" }),
+  password: z.string().min(1, "Password is required"),
+})
+
 
 export default function Page() {
   return (
