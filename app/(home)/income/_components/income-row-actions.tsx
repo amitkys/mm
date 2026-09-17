@@ -1,12 +1,25 @@
 "use client";
 
 import { useState } from "react";
+import { useForm, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import { type Income } from "../query/get";
 import { useUpdateIncomeMutation } from "../query/update";
 import { useDeleteIncomeMutation } from "../query/delete";
+import {
+  updateIncomeSchema,
+  type UpdateIncomeSchema,
+} from "../lib/zod-type/income";
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import {
+  Field,
+  FieldLabel,
+  FieldContent,
+  FieldError,
+} from "@/components/ui/field";
 import {
   Sheet,
   SheetContent,
@@ -27,68 +40,61 @@ interface IncomeRowActionsProps {
 export function IncomeRowActions({ incomeItem }: IncomeRowActionsProps) {
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
+  const [serverError, setServerError] = useState<string | null>(null);
 
   const formatDateForInput = (d: Date | string) => {
     const dateObj = new Date(d);
     return dateObj.toISOString().split("T")[0];
   };
 
-  const [date, setDate] = useState<string>(formatDateForInput(incomeItem.date));
-  const [type, setType] = useState<Income["type"]>(incomeItem.type);
-  const [source, setSource] = useState<Income["source"]>(incomeItem.source);
-  const [amount, setAmount] = useState<string>(incomeItem.amount);
-  const [depositedTo, setDepositedTo] = useState<Income["depositedTo"]>(
-    incomeItem.depositedTo
-  );
-  const [description, setDescription] = useState<string>(
-    incomeItem.description ?? ""
-  );
-  const [notes, setNotes] = useState<string>(incomeItem.notes ?? "");
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
   const updateMutation = useUpdateIncomeMutation();
   const deleteMutation = useDeleteIncomeMutation();
+
+  const form = useForm<UpdateIncomeSchema>({
+    resolver: zodResolver(updateIncomeSchema),
+    defaultValues: {
+      date: new Date(incomeItem.date),
+      type: incomeItem.type,
+      source: incomeItem.source,
+      amount: incomeItem.amount,
+      depositedTo: incomeItem.depositedTo,
+      description: incomeItem.description ?? "",
+      notes: incomeItem.notes ?? "",
+    },
+  });
 
   const handleOpenChange = (open: boolean) => {
     setIsOpen(open);
     if (open) {
-      setDate(formatDateForInput(incomeItem.date));
-      setType(incomeItem.type);
-      setSource(incomeItem.source);
-      setAmount(incomeItem.amount);
-      setDepositedTo(incomeItem.depositedTo);
-      setDescription(incomeItem.description ?? "");
-      setNotes(incomeItem.notes ?? "");
-      setErrorMessage(null);
+      form.reset({
+        date: new Date(incomeItem.date),
+        type: incomeItem.type,
+        source: incomeItem.source,
+        amount: incomeItem.amount,
+        depositedTo: incomeItem.depositedTo,
+        description: incomeItem.description ?? "",
+        notes: incomeItem.notes ?? "",
+      });
+      setServerError(null);
     }
   };
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    if (!amount || isNaN(Number(amount))) {
-      setErrorMessage("Please enter a valid amount.");
-      return;
-    }
+  const handleSave = async (values: UpdateIncomeSchema) => {
+    setServerError(null);
 
     const res = await updateMutation.mutateAsync({
       id: incomeItem.id,
       input: {
-        date: new Date(date),
-        type,
-        source,
-        amount,
-        depositedTo,
-        description: description.trim() ? description.trim() : null,
-        notes: notes.trim() ? notes.trim() : null,
+        ...values,
+        description: values.description?.trim() ? values.description.trim() : null,
+        notes: values.notes?.trim() ? values.notes.trim() : null,
       },
     });
 
     if (res.success) {
       setIsOpen(false);
     } else {
-      setErrorMessage(res.message || "Failed to update income record.");
+      setServerError(res.message || "Failed to update income record.");
     }
   };
 
@@ -101,7 +107,7 @@ export function IncomeRowActions({ incomeItem }: IncomeRowActionsProps) {
       return;
     }
 
-    setErrorMessage(null);
+    setServerError(null);
     const res = await deleteMutation.mutateAsync(incomeItem.id);
     if (!res.success) {
       alert(res.message || "Failed to delete income record.");
@@ -137,7 +143,10 @@ export function IncomeRowActions({ incomeItem }: IncomeRowActionsProps) {
       </div>
 
       <Sheet open={isOpen} onOpenChange={handleOpenChange}>
-        <SheetContent side={isMobile ? "bottom" : "right"} className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl">
+        <SheetContent
+          side={isMobile ? "bottom" : "right"}
+          className="p-6 data-[side=right]:sm:max-w-2xl lg:data-[side=right]:max-w-3xl"
+        >
           <SheetHeader className="mb-6 p-0">
             <SheetTitle>Edit Income Record</SheetTitle>
             <SheetDescription>
@@ -145,104 +154,198 @@ export function IncomeRowActions({ incomeItem }: IncomeRowActionsProps) {
             </SheetDescription>
           </SheetHeader>
 
-          <form onSubmit={handleSave} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-date">Date</Label>
-              <Input
-                id="edit-date"
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                required
-              />
-            </div>
+          <form
+            onSubmit={form.handleSubmit(handleSave)}
+            className="grid grid-cols-1 sm:grid-cols-2 gap-4"
+          >
+            {/* Date */}
+            <Controller
+              control={form.control}
+              name="date"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="edit-date">
+                    Date
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      id="edit-date"
+                      type="date"
+                      value={
+                        field.value instanceof Date && !isNaN(field.value.getTime())
+                          ? formatDateForInput(field.value)
+                          : formatDateForInput(incomeItem.date)
+                      }
+                      onChange={(e) =>
+                        field.onChange(new Date(e.target.value))
+                      }
+                      aria-invalid={fieldState.invalid}
+                    />
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-type">Type</Label>
-              <select
-                id="edit-type"
-                value={type}
-                onChange={(e) => setType(e.target.value as Income["type"])}
-                className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-              >
-                <option value="Income">Income (Counts towards savings)</option>
-                <option value="Transfer">Transfer (e.g. ATM withdrawal)</option>
-                <option value="Reimbursement">Reimbursement</option>
-              </select>
-            </div>
+            {/* Type */}
+            <Controller
+              control={form.control}
+              name="type"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="edit-type">
+                    Type
+                  </FieldLabel>
+                  <FieldContent>
+                    <select
+                      {...field}
+                      id="edit-type"
+                      aria-invalid={fieldState.invalid}
+                      className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                    >
+                      <option value="Income">Income (Counts towards savings)</option>
+                      <option value="Transfer">Transfer (e.g. ATM withdrawal)</option>
+                      <option value="Reimbursement">Reimbursement</option>
+                    </select>
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-source">Source</Label>
-              <select
-                id="edit-source"
-                value={source}
-                onChange={(e) => setSource(e.target.value as Income["source"])}
-                className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-              >
-                <option value="Salary">Salary</option>
-                <option value="Freelance/Business">Freelance/Business</option>
-                <option value="Friend Repayment">Friend Repayment</option>
-                <option value="Interest/Dividends">Interest/Dividends</option>
-                <option value="Refund">Refund</option>
-                <option value="ATM Withdrawal">ATM Withdrawal</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+            {/* Source */}
+            <Controller
+              control={form.control}
+              name="source"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="edit-source">
+                    Source
+                  </FieldLabel>
+                  <FieldContent>
+                    <select
+                      {...field}
+                      id="edit-source"
+                      aria-invalid={fieldState.invalid}
+                      className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                    >
+                      <option value="Salary">Salary</option>
+                      <option value="Freelance/Business">Freelance/Business</option>
+                      <option value="Friend Repayment">Friend Repayment</option>
+                      <option value="Interest/Dividends">Interest/Dividends</option>
+                      <option value="Refund">Refund</option>
+                      <option value="ATM Withdrawal">ATM Withdrawal</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-amount">Amount</Label>
-              <Input
-                id="edit-amount"
-                type="number"
-                step="0.01"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.00"
-                required
-              />
-            </div>
+            {/* Amount */}
+            <Controller
+              control={form.control}
+              name="amount"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="edit-amount">
+                    Amount
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      {...field}
+                      id="edit-amount"
+                      type="number"
+                      step="0.01"
+                      aria-invalid={fieldState.invalid}
+                      placeholder="e.g. 10000"
+                    />
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-depositedTo">Deposited To</Label>
-              <select
-                id="edit-depositedTo"
-                value={depositedTo}
-                onChange={(e) => setDepositedTo(e.target.value as Income["depositedTo"])}
-                className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-              >
-                <option value="Bank">Bank</option>
-                <option value="Cash">Cash</option>
-                <option value="UPI">UPI</option>
-                <option value="Credit Card">Credit Card</option>
-                <option value="Other">Other</option>
-              </select>
-            </div>
+            {/* Deposited To */}
+            <Controller
+              control={form.control}
+              name="depositedTo"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel requiredLable htmlFor="edit-depositedTo">
+                    Deposited To
+                  </FieldLabel>
+                  <FieldContent>
+                    <select
+                      {...field}
+                      id="edit-depositedTo"
+                      aria-invalid={fieldState.invalid}
+                      className="h-9 w-full min-w-0 rounded-3xl border border-transparent bg-input/50 px-3 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                    >
+                      <option value="Bank">Bank</option>
+                      <option value="Cash">Cash</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Credit Card">Credit Card</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-description">Description (Optional)</Label>
-              <Input
-                id="edit-description"
-                type="text"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="e.g. August Salary Payment"
-              />
-            </div>
+            {/* Description */}
+            <Controller
+              control={form.control}
+              name="description"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined}>
+                  <FieldLabel htmlFor="edit-description">
+                    Description (Optional)
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      {...field}
+                      id="edit-description"
+                      type="text"
+                      value={field.value ?? ""}
+                      aria-invalid={fieldState.invalid}
+                      placeholder="e.g. Monthly Salary"
+                    />
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            <div className="flex flex-col gap-2 sm:col-span-2">
-              <Label htmlFor="edit-notes">Notes (Optional)</Label>
-              <Input
-                id="edit-notes"
-                type="text"
-                value={notes}
-                onChange={(e) => setNotes(e.target.value)}
-                placeholder="Additional details..."
-              />
-            </div>
+            {/* Notes */}
+            <Controller
+              control={form.control}
+              name="notes"
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid || undefined} className="sm:col-span-2">
+                  <FieldLabel htmlFor="edit-notes">
+                    Notes (Optional)
+                  </FieldLabel>
+                  <FieldContent>
+                    <Input
+                      {...field}
+                      id="edit-notes"
+                      type="text"
+                      value={field.value ?? ""}
+                      aria-invalid={fieldState.invalid}
+                      placeholder="Additional notes..."
+                    />
+                    <FieldError errors={fieldState.error ? [fieldState.error] : undefined} />
+                  </FieldContent>
+                </Field>
+              )}
+            />
 
-            {errorMessage && (
+            {serverError && (
               <div className="rounded-md bg-destructive/10 p-3 text-xs text-destructive sm:col-span-2">
-                {errorMessage}
+                {serverError}
               </div>
             )}
 

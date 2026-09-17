@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateIncomeAction } from "@/app/(home)/income/lib/action";
+import type { UpdateIncomeSchema } from "../lib/zod-type/income";
 
 export function useUpdateIncomeMutation() {
   const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export function useUpdateIncomeMutation() {
       input,
     }: {
       id: string;
-      input: Parameters<typeof updateIncomeAction>[1];
+      input: UpdateIncomeSchema;
     }) => updateIncomeAction(id, input),
     onSuccess: (res) => {
       if (!res.success) return;
