@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { updateExpansesLogAction } from "@/app/(home)/expanses-log/lib/action";
+import type { UpdateExpansesLogSchema } from "../lib/zod-type/expanses-log";
 
 export function useUpdateExpansesLogMutation() {
   const queryClient = useQueryClient();
@@ -10,7 +11,7 @@ export function useUpdateExpansesLogMutation() {
       input,
     }: {
       id: string;
-      input: Parameters<typeof updateExpansesLogAction>[1];
+      input: UpdateExpansesLogSchema;
     }) => updateExpansesLogAction(id, input),
     onSuccess: (res) => {
       if (!res.success) return;
