@@ -23,6 +23,10 @@ export const relations = defineRelations(schema, (r) => ({
       from: r.user.id,
       to: r.expansesLog.userId,
     }),
+    userSecurity: r.one.userSecurity({
+      from: r.user.id,
+      to: r.userSecurity.userId,
+    }),
   },
   session: {
     user: r.one.user({
@@ -68,6 +72,12 @@ export const relations = defineRelations(schema, (r) => ({
     incomeRef: r.one.income({
       from: r.expansesLog.incomeId,
       to: r.income.id,
+    }),
+  },
+  userSecurity: {
+    user: r.one.user({
+      from: r.userSecurity.userId,
+      to: r.user.id,
     }),
   },
 }));
