@@ -2,7 +2,10 @@
 
 import Link from "next/link";
 import { LayoutGrid, LogOut } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { LockKeyholeIcon, SecurityLockIcon } from "@hugeicons/core-free-icons";
 import { useSession, signOut } from "@/lib/auth-client";
+import { useLockPinSessionMutation } from "@/app/verify-pin/query/lock";
 
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -18,11 +21,17 @@ import {
 
 export function UserNav() {
   const { data: session } = useSession();
+  const lockPinSessionMutation = useLockPinSessionMutation();
   const user = session?.user;
 
   const handleSignOut = async () => {
     await signOut();
     window.location.href = "/signin";
+  };
+
+  const handleLock = async () => {
+    const result = await lockPinSessionMutation.mutateAsync();
+    if (result.success) window.location.href = "/verify-pin";
   };
 
   const getInitials = (name?: string | null, email?: string | null) => {
@@ -80,6 +89,21 @@ export function UserNav() {
           >
             <LayoutGrid className="w-4 h-4 mr-3 text-muted-foreground" />
             Dashboard
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="hover:cursor-pointer"
+            render={<Link href="/change-pin" className="flex items-center" />}
+          >
+            <HugeiconsIcon icon={SecurityLockIcon} strokeWidth={2} />
+            Change PIN
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="hover:cursor-pointer"
+            onClick={handleLock}
+            disabled={lockPinSessionMutation.isPending}
+          >
+            <HugeiconsIcon icon={LockKeyholeIcon} strokeWidth={2} />
+            Lock now
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

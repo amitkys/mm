@@ -19,6 +19,8 @@ export const session = pgTable("session", {
  updatedAt: timestamp('updated_at').$onUpdate(() => new Date).notNull(),
  ipAddress: text('ip_address'),
  userAgent: text('user_agent'),
+ pinVerifiedAt: timestamp('pin_verified_at'),
+ pinUnlockedUntil: timestamp('pin_unlocked_until'),
  userId: text('user_id').notNull().references(()=> user.id, { onDelete: 'cascade' })
 					}, (table) => [
   index("session_userId_idx").on(table.userId),

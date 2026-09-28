@@ -2,9 +2,8 @@
 
 import { db } from "@/db";
 import { expansesLog } from "@/db/schema/export";
-import { auth } from "@/lib/auth";
+import { requireUnlockedSession } from "@/lib/pin-access";
 import { and, desc, eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import {
   createExpansesLogSchema,
   type CreateExpansesLogSchema,
@@ -14,8 +13,9 @@ import {
 
 export async function getExpansesLogAction() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const logs = await db
       .select()
@@ -40,8 +40,9 @@ export async function createExpansesLogAction(input: CreateExpansesLogSchema) {
       };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [created] = await db
       .insert(expansesLog)
@@ -81,8 +82,9 @@ export async function updateExpansesLogAction(
       };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [updated] = await db
       .update(expansesLog)
@@ -121,8 +123,9 @@ export async function updateExpansesLogAction(
 
 export async function deleteExpansesLogAction(id: string) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [deleted] = await db
       .delete(expansesLog)

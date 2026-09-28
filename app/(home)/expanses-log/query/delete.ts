@@ -9,6 +9,7 @@ export function useDeleteExpansesLogMutation() {
     onSuccess: (res) => {
       if (!res.success) return;
       queryClient.invalidateQueries({ queryKey: ["get-expanses-log"] });
+      queryClient.invalidateQueries({ queryKey: ["get-dashboard"] });
     },
   });
 }

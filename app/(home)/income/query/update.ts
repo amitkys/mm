@@ -16,6 +16,8 @@ export function useUpdateIncomeMutation() {
     onSuccess: (res) => {
       if (!res.success) return;
       queryClient.invalidateQueries({ queryKey: ["get-income"] });
+      queryClient.invalidateQueries({ queryKey: ["get-dashboard"] });
+      queryClient.invalidateQueries({ queryKey: ["get-dashboard-tags"] });
     },
   });
 }

@@ -2,9 +2,8 @@
 
 import { db } from "@/db";
 import { income } from "@/db/schema/export";
-import { auth } from "@/lib/auth";
+import { requireUnlockedSession } from "@/lib/pin-access";
 import { and, desc, eq } from "drizzle-orm";
-import { headers } from "next/headers";
 import {
   createIncomeSchema,
   type CreateIncomeSchema,
@@ -14,8 +13,9 @@ import {
 
 export async function getIncomeAction() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const records = await db
       .select()
@@ -40,8 +40,9 @@ export async function createIncomeAction(input: CreateIncomeSchema) {
       };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [created] = await db
       .insert(income)
@@ -77,8 +78,9 @@ export async function updateIncomeAction(
       };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [updated] = await db
       .update(income)
@@ -109,8 +111,9 @@ export async function updateIncomeAction(
 
 export async function deleteIncomeAction(id: string) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [deleted] = await db
       .delete(income)

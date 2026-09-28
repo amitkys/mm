@@ -2,9 +2,8 @@
 
 import { db } from "@/db";
 import { expansesCategory } from "@/db/schema/export";
-import { auth } from "@/lib/auth";
+import { requireUnlockedSession } from "@/lib/pin-access";
 import { and, eq, isNull, or } from "drizzle-orm";
-import { headers } from "next/headers";
 import {
   createExpansesCategorySchema,
   type CreateExpansesCategorySchema,
@@ -14,8 +13,9 @@ import {
 
 export async function getExpansesCategoryAction() {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const categories = await db
       .select()
@@ -45,8 +45,9 @@ export async function createExpansesCategoryAction(input: CreateExpansesCategory
       };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [created] = await db
       .insert(expansesCategory)
@@ -78,8 +79,9 @@ export async function updateExpansesCategoryAction(
       };
     }
 
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [existing] = await db
       .select()
@@ -129,8 +131,9 @@ export async function updateExpansesCategoryAction(
 
 export async function deleteExpansesCategoryAction(id: string) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session) return { success: false, message: "User not authenticated" };
+    const access = await requireUnlockedSession();
+    if (!access.success) return access;
+    const { session } = access;
 
     const [deleted] = await db
       .delete(expansesCategory)

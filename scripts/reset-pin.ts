@@ -1,90 +1,67 @@
 import "dotenv/config";
-import { db } from "../db";
-import { user, userSecurity } from "../db/schema/export";
+
 import { eq } from "drizzle-orm";
+import { z } from "zod";
+import { db } from "@/db";
+import { session, user, userSecurity } from "@/db/schema/export";
 
-async function main() {
-  const args = process.argv.slice(2);
-  const targetEmailOrId = args[0]?.trim();
+const emailSchema = z.email({ error: "Provide a valid email address" });
 
-  console.log("\n🔑 --- Admin PIN Reset Tool ---\n");
+async function resetPinByEmail(email: string) {
+  const [account] = await db
+    .select({ id: user.id })
+    .from(user)
+    .where(eq(user.email, email))
+    .limit(1);
 
-  if (!targetEmailOrId) {
-    console.log("Usage: bun run pin:reset <user_email_or_id>\n");
-    console.log("Fetching registered users and PIN status...\n");
-
-    const users = await db.select().from(user);
-    const securities = await db.select().from(userSecurity);
-    const securityMap = new Map(securities.map((s) => [s.userId, s]));
-
-    if (users.length === 0) {
-      console.log("No users found in database.");
-      process.exit(0);
-    }
-
-    console.table(
-      users.map((u) => ({
-        ID: u.id,
-        Name: u.name,
-        Email: u.email,
-        "Has PIN": securityMap.has(u.id) ? "YES" : "NO",
-        "Failed Attempts": securityMap.get(u.id)?.failedAttempts ?? 0,
-        "Is Locked":
-          securityMap.get(u.id)?.lockedUntil &&
-          securityMap.get(u.id)!.lockedUntil! > new Date()
-            ? "YES"
-            : "NO",
-      }))
-    );
-
-    console.log(
-      "\nTo reset a user's PIN, run:\n  bun run pin:reset <email>\n"
-    );
-    process.exit(0);
+  if (!account) {
+    throw new Error("No user was found with that email address");
   }
 
-  // Find user by email or ID
-  const [foundUser] = await db
-    .select()
-    .from(user)
-    .where(
-      targetEmailOrId.includes("@")
-        ? eq(user.email, targetEmailOrId)
-        : eq(user.id, targetEmailOrId)
-    );
+  const result = await db.transaction(async (tx) => {
+    const deletedSessions = await tx
+      .delete(session)
+      .where(eq(session.userId, account.id))
+      .returning({ id: session.id });
 
-  if (!foundUser) {
-    console.error(`❌ User not found with email or ID: "${targetEmailOrId}"`);
+    const deletedPinRecords = await tx
+      .delete(userSecurity)
+      .where(eq(userSecurity.userId, account.id))
+      .returning({ id: userSecurity.id });
+
+    return {
+      sessionCount: deletedSessions.length,
+      pinWasConfigured: deletedPinRecords.length > 0,
+    };
+  });
+
+  return result;
+}
+
+async function main() {
+  const parsedEmail = emailSchema.safeParse(process.argv[2]?.trim().toLowerCase());
+
+  if (!parsedEmail.success) {
+    console.error("Usage: bun run pin:reset <email-address>");
+    console.error(parsedEmail.error.issues[0]?.message ?? "Invalid email address");
     process.exit(1);
   }
 
-  // Check existing security entry
-  const [secRecord] = await db
-    .select()
-    .from(userSecurity)
-    .where(eq(userSecurity.userId, foundUser.id));
+  const result = await resetPinByEmail(parsedEmail.data);
 
-  if (!secRecord) {
-    console.log(
-      `ℹ️ User "${foundUser.name}" (${foundUser.email}) does not have a PIN set up.`
-    );
-    process.exit(0);
-  }
-
-  // Delete PIN record
-  await db.delete(userSecurity).where(eq(userSecurity.userId, foundUser.id));
-
+  console.log(`PIN reset completed for ${parsedEmail.data}.`);
+  console.log(`Deleted ${result.sessionCount} active session(s).`);
   console.log(
-    `✅ Successfully reset PIN for "${foundUser.name}" (${foundUser.email}).`
+    result.pinWasConfigured
+      ? "The user must sign in and create a new PIN."
+      : "No PIN was configured; the user must sign in and create one."
   );
-  console.log(
-    `👉 User will be automatically redirected to /setup-pin on their next login.\n`
-  );
-
-  process.exit(0);
 }
 
-main().catch((err) => {
-  console.error("❌ Failed to reset PIN:", err);
-  process.exit(1);
-});
+main()
+  .then(() => process.exit(0))
+  .catch((error: unknown) => {
+    const message = error instanceof Error ? error.message : "PIN reset failed";
+    console.error(message);
+    process.exit(1);
+  });

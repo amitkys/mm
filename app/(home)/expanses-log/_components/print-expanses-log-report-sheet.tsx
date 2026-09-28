@@ -5,9 +5,11 @@ import { useReactToPrint } from "react-to-print";
 import { type ExpansesLog } from "../query/get";
 import { useGetIncomeQuery } from "@/app/(home)/income/query/get";
 import { useGetExpansesCategoryQuery } from "@/app/(home)/expanses-category/query/get";
+import { groupPrintExpensesByCategory } from "../lib/print-category-groups";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import {
   Sheet,
   SheetContent,
@@ -74,6 +76,10 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
   const [selectedIncomeId, setSelectedIncomeId] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [columnToggles, setColumnToggles] = useState<ColumnToggles>(DEFAULT_COLUMNS);
+  const selectedIncome = useMemo(
+    () => incomeData?.find((income) => income.id === selectedIncomeId),
+    [incomeData, selectedIncomeId]
+  );
 
   const handlePrint = useReactToPrint({
     contentRef: printRef,
@@ -178,6 +184,11 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
   const totalAmount = useMemo(() => {
     return filteredLogs.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
   }, [filteredLogs]);
+  const groupByCategory = selectedIncomeId !== "" && selectedIncomeId !== "UNASSIGNED";
+  const categoryGroups = useMemo(() => groupPrintExpensesByCategory(filteredLogs), [filteredLogs]);
+  const printSections = groupByCategory
+    ? categoryGroups
+    : [{ category: "", logs: filteredLogs, amount: totalAmount, percentage: 100 }];
 
   // Label descriptor for header
   const filterSummaryText = useMemo(() => {
@@ -186,8 +197,7 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
     if (selectedIncomeId === "UNASSIGNED") {
       parts.push("Income Tag: Unassigned");
     } else if (selectedIncomeId) {
-      const inc = (incomeData ?? []).find((i: { id: string; name: string; source: string }) => i.id === selectedIncomeId);
-      parts.push(`Income Tag: ${inc ? `${inc.name} (${inc.source})` : selectedIncomeId}`);
+      parts.push(`Income Tag: ${selectedIncome ? `${selectedIncome.name} (${selectedIncome.source})` : selectedIncomeId}`);
     } else {
       parts.push("Income Tag: All Incomes");
     }
@@ -203,7 +213,7 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
     if (selectedCategory) parts.push(`Category: ${selectedCategory}`);
 
     return parts.join(" | ");
-  }, [datePreset, specificDate, fromDate, toDate, selectedIncomeId, selectedCategory, incomeData]);
+  }, [datePreset, specificDate, fromDate, toDate, selectedIncomeId, selectedCategory, selectedIncome]);
 
   return (
     <>
@@ -400,13 +410,26 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
 
             {/* Section 5: Filtered Result Summary Preview */}
             <div className="rounded-lg border bg-card p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-muted-foreground">
                 <span>Matching Entries: <strong className="text-foreground font-semibold">{filteredLogs.length}</strong></span>
-                <span>Total Amount: <strong className="text-foreground font-semibold">₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>
+                {selectedIncome && <span>Income Amount: <strong className="text-foreground font-semibold">₹{Number(selectedIncome.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>}
+                <span>Total Expenses: <strong className="text-foreground font-semibold">₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>
               </div>
               <p className="text-xs text-muted-foreground italic border-t pt-2">
                 Active Filter: {filterSummaryText}
               </p>
+              {groupByCategory && categoryGroups.length > 0 && (
+                <div className="flex flex-col gap-1 pt-2 text-xs">
+                  <Separator />
+                  <span className="font-medium">Category breakdown</span>
+                  {categoryGroups.map((group) => (
+                    <div key={group.category} className="flex justify-between gap-3">
+                      <span>{group.category} • {group.percentage.toFixed(1)}%</span>
+                      <span>₹{group.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
@@ -443,76 +466,87 @@ export function PrintExpansesLogReportSheet({ logs }: PrintExpansesLogReportShee
           </div>
 
           {/* Compact B&W Summary Bar */}
-          <div className="border border-black p-2 mb-3 flex items-center justify-between text-[11px] font-mono">
+          <div className="border border-black p-2 mb-3 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono">
             <span>Total Transactions: <strong>{filteredLogs.length}</strong></span>
-            <span>Total Amount: <strong>₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>
+            {selectedIncome && <span>Income Amount: <strong>₹{Number(selectedIncome.amount).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>}
+            <span>Total Expenses: <strong>₹{totalAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</strong></span>
           </div>
 
-          {/* Simple Black & White Data Table */}
+          {/* Category sections are shown when a specific income tag is selected. */}
           {filteredLogs.length > 0 ? (
-            <table className="w-full text-left border-collapse text-[10px] font-sans">
-              <thead>
-                <tr className="border-b border-black text-black uppercase font-bold text-[9px]">
-                  {columnToggles.date && <th className="py-1 px-1.5">Date</th>}
-                  {columnToggles.incomeTag && <th className="py-1 px-1.5">Tag / Income</th>}
-                  {columnToggles.category && <th className="py-1 px-1.5">Category</th>}
-                  {columnToggles.subCategory && <th className="py-1 px-1.5">Sub Category</th>}
-                  {columnToggles.amount && <th className="py-1 px-1.5 text-right">Amount</th>}
-                  {columnToggles.paymentMethod && <th className="py-1 px-1.5">Payment Method</th>}
-                  {columnToggles.source && <th className="py-1 px-1.5">Source</th>}
-                  {columnToggles.type && <th className="py-1 px-1.5">Type</th>}
-                  {columnToggles.description && <th className="py-1 px-1.5">Description</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {filteredLogs.map((log) => {
-                  const logDate = log.date
-                    ? new Date(log.date).toLocaleDateString("en-IN", {
-                        year: "numeric",
-                        month: "short",
-                        day: "numeric",
-                      })
-                    : "-";
-
-                  const amtNum = Number(log.amount);
-                  const formattedAmt = isNaN(amtNum)
-                    ? log.amount
-                    : `₹${amtNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
-
-                  return (
-                    <tr key={log.id} className="border-b border-gray-300">
-                      {columnToggles.date && <td className="py-1 px-1.5 font-medium">{logDate}</td>}
-                      {columnToggles.incomeTag && (
-                        <td className="py-1 px-1.5 font-mono text-[9px]">
-                          {log.name || "-"}
-                        </td>
-                      )}
-                      {columnToggles.category && <td className="py-1 px-1.5">{log.category}</td>}
-                      {columnToggles.subCategory && (
-                        <td className="py-1 px-1.5">{log.subCategory || "-"}</td>
-                      )}
-                      {columnToggles.amount && (
-                        <td className="py-1 px-1.5 text-right font-bold">{formattedAmt}</td>
-                      )}
-                      {columnToggles.paymentMethod && (
-                        <td className="py-1 px-1.5">{log.paymentMethod}</td>
-                      )}
-                      {columnToggles.source && (
-                        <td className="py-1 px-1.5">{log.source || "-"}</td>
-                      )}
-                      {columnToggles.type && (
-                        <td className="py-1 px-1.5 font-semibold">{log.type}</td>
-                      )}
-                      {columnToggles.description && (
-                        <td className="py-1 px-1.5 max-w-[200px] truncate">
-                          {log.description || "-"}
-                        </td>
-                      )}
+            printSections.map((section) => (
+              <section key={section.category || "all"} className="mb-4">
+                {groupByCategory && (
+                  <div className="mb-1 flex items-center justify-between border-b border-black px-1.5 py-1 text-[11px] font-bold text-black" style={{ breakAfter: "avoid" }}>
+                    <span>{section.category} • {section.percentage.toFixed(1)}%</span>
+                    <span>₹{section.amount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                )}
+                <table className="w-full text-left border-collapse text-[10px] font-sans">
+                  <thead>
+                    <tr className="border-b border-black text-black uppercase font-bold text-[9px]">
+                      {columnToggles.date && <th className="py-1 px-1.5">Date</th>}
+                      {columnToggles.incomeTag && <th className="py-1 px-1.5">Tag / Income</th>}
+                      {columnToggles.category && <th className="py-1 px-1.5">Category</th>}
+                      {columnToggles.subCategory && <th className="py-1 px-1.5">Sub Category</th>}
+                      {columnToggles.amount && <th className="py-1 px-1.5 text-right">Amount</th>}
+                      {columnToggles.paymentMethod && <th className="py-1 px-1.5">Payment Method</th>}
+                      {columnToggles.source && <th className="py-1 px-1.5">Source</th>}
+                      {columnToggles.type && <th className="py-1 px-1.5">Type</th>}
+                      {columnToggles.description && <th className="py-1 px-1.5">Description</th>}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                  </thead>
+                  <tbody>
+                    {section.logs.map((log) => {
+                      const logDate = log.date
+                        ? new Date(log.date).toLocaleDateString("en-IN", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "-";
+
+                      const amtNum = Number(log.amount);
+                      const formattedAmt = isNaN(amtNum)
+                        ? log.amount
+                        : `₹${amtNum.toLocaleString("en-IN", { minimumFractionDigits: 2 })}`;
+
+                      return (
+                        <tr key={log.id} className="border-b border-gray-300">
+                          {columnToggles.date && <td className="py-1 px-1.5 font-medium">{logDate}</td>}
+                          {columnToggles.incomeTag && (
+                            <td className="py-1 px-1.5 font-mono text-[9px]">
+                              {log.name || "-"}
+                            </td>
+                          )}
+                          {columnToggles.category && <td className="py-1 px-1.5">{log.category}</td>}
+                          {columnToggles.subCategory && (
+                            <td className="py-1 px-1.5">{log.subCategory || "-"}</td>
+                          )}
+                          {columnToggles.amount && (
+                            <td className="py-1 px-1.5 text-right font-bold">{formattedAmt}</td>
+                          )}
+                          {columnToggles.paymentMethod && (
+                            <td className="py-1 px-1.5">{log.paymentMethod}</td>
+                          )}
+                          {columnToggles.source && (
+                            <td className="py-1 px-1.5">{log.source || "-"}</td>
+                          )}
+                          {columnToggles.type && (
+                            <td className="py-1 px-1.5 font-semibold">{log.type}</td>
+                          )}
+                          {columnToggles.description && (
+                            <td className="py-1 px-1.5 max-w-[200px] truncate">
+                              {log.description || "-"}
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </section>
+            ))
           ) : (
             <div className="py-4 text-center text-black text-[10px] border border-black">
               No expense entries matched the selected filter configuration.

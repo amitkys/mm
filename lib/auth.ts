@@ -9,6 +9,23 @@ export const auth = betterAuth({
     }),
     baseURL: process.env.BETTER_AUTH_URL!,
 
+    session: {
+        additionalFields: {
+            pinVerifiedAt: {
+                type: "date",
+                required: false,
+                input: false,
+                returned: false,
+            },
+            pinUnlockedUntil: {
+                type: "date",
+                required: false,
+                input: false,
+                returned: false,
+            },
+        },
+    },
+
     socialProviders: {
         google: {
             clientId: process.env.GOOGLE_CLIENT_ID!,
