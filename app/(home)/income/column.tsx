@@ -15,11 +15,15 @@ export const columns = columnHelper.columns([
             const val = info.getValue();
             if (!val) return "-";
             const dateObj = new Date(val);
-            return dateObj.toLocaleDateString("en-US", {
-                year: "numeric",
-                month: "short",
-                day: "numeric",
-            });
+            return (
+                <span title={info.row.original.description ?? undefined}>
+                    {dateObj.toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "short",
+                        day: "numeric",
+                    })}
+                </span>
+            );
         },
     }),
     columnHelper.accessor("name", {
